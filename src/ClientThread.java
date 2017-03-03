@@ -133,7 +133,7 @@ public class ClientThread extends Thread {
 
         try {
 
-            output.writeBytes(protocol.createMessage("send-message", "true", "" + server.addMessage(username, time, message)) + "\n");
+            output.writeBytes(protocol.createMessage("send-message", "true", "" + server.addMessage(username, message)) + "\n");
         } catch (IOException e) {
             e.printStackTrace();
         }

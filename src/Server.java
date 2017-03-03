@@ -1,10 +1,11 @@
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.time.LocalTime;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -24,6 +25,7 @@ public class Server {
         this.isStopped = false;
         this.messageList = new ArrayList<>();
         this.threadPool = Executors.newCachedThreadPool();
+        userInformation = new HashMap<>();
     }
 
     public void start(){
@@ -95,14 +97,20 @@ public class Server {
         this.userInformation.put(username, new UserInfo(username, password, new ArrayList<>()));
     }
 
-    public int addMessage(String username, int time, String message){
+    public int addMessage(String username, String message){
 
+        String time = new SimpleDateFormat("HH:mm").format(new java.util.Date());
+
+        this.userInformation.get(username).getMessages().add(new MessageMeta(username, time , message));
         this.messageList.add( new MessageMeta(username, time , message));
+
         return messageList.size();
     }
 
     public boolean detailsCorrect(String username, String password){
+
         UserInfo user = userInformation.get(username);
+
         if (user.getPassword().equals(password)){
             return true;
         }

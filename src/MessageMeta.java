@@ -3,27 +3,27 @@
  */
 public class MessageMeta {
 
-    private int time;
+    private String time;
     private String username;
     private String message;
 
-    public MessageMeta(String username, int time, String message) {
+    public MessageMeta(String username, String time, String message) {
         this.time = time;
         this.username = username;
         this.message = message;
     }
 
     public MessageMeta(){
-        this.time = 0;
+        this.time = null;
         this.username = null;
         this.message = null;
     }
 
-    public int getTime() {
+    public String getTime() {
         return time;
     }
 
-    public void setTime(int time) {
+    public void setTime(String time) {
         this.time = time;
     }
 
