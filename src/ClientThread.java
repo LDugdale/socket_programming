@@ -1,40 +1,48 @@
 import Protocol.SimpleProtocol;
 import java.io.*;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Created by mnt_x on 28/02/2017.
  */
 public class ClientThread extends Thread {
 
-    private Server server;
-    private DataOutputStream output;	// output stream to server
-    private BufferedReader input;	// input stream from the client
-    private SimpleProtocol protocol;
-    private Socket clientSocket;
-    private String username;
-    private boolean isStopped;
+    private Server server; // and instance of the server is passed in to pass messages between the data structures.
+    private DataOutputStream output; // output stream to server
+    private BufferedReader input; // input stream from the client
+    private SimpleProtocol protocol; // The protocol contains methods used for communicating with client
+    private Socket clientSocket; // the client socket
+    private String username; // stores the Username of client the Thread is talking to.
+    private boolean isStopped; // when false the loop in the run method stops used for shutting the thread down.
 
 
     /**
      * Constructor setup input output stream and assign socket to field variable.
      *
      * @param clientSocket
-     * @param server
+     * @param server an instance of the server is passed in to pass messages between the data structures.
      */
     public ClientThread(Server server, Socket clientSocket) {
+
         this.protocol = new SimpleProtocol();
         this.server = server;
-        this.clientSocket=clientSocket;
+        this.clientSocket = clientSocket;
+
         try {
+
+            // Setup the input and output streams for communicating with the client.
             input = new BufferedReader( new InputStreamReader( clientSocket.getInputStream()));
             output = new DataOutputStream(clientSocket.getOutputStream());
 
+            // Send initial welcome message
             output.writeBytes(protocol.createMessage("welcome","Welcome to the most amazing chat app in the world!") + "\n");
 
         } catch (IOException e) {
+
             e.printStackTrace();
         }
     }
@@ -43,7 +51,7 @@ public class ClientThread extends Thread {
      *
      * @param username
      */
-    public void setUsername(String username){
+    private void setUsername(String username){
 
         this.username = username;
     }
@@ -53,43 +61,46 @@ public class ClientThread extends Thread {
      */
     public void run(){
 
-
         while (! isStopped) {
 
-            protocol();
+            try {
+                protocol();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
+        stopThread();
     }
 
     /**
      *
      */
-    public void protocol() {
+    private void protocol() throws IOException {
 
-        String [] response = null;
-        try {
+        String [] response;
 
-            response = protocol.decodeMessage(input.readLine());
+            response = getResponse();
+
             if (response != null) {
-
-                if (response[0].equals("sign-up")) {
-
-                    signUp(response[1], response[2]);
-                } else if (response[0].equals("sign-in")) {
-
-                    signIn(response[1], response[2]);
-                } else if (response[0].equals("get-message")) {
-
-                    getMessage(Integer.parseInt(response[1]));
-                } else if (response[0].equals("send-message")) {
-
-                    sendMessage(response[1]);
+                switch (response[0]) {
+                    case "sign-up":
+                        signUp(response[1], response[2]);
+                        break;
+                    case "sign-in":
+                        signIn(response[1], response[2]);
+                        break;
+                    case "get-message":
+                        getMessage(Integer.parseInt(response[1]));
+                        break;
+                    case "send-message":
+                        sendMessage(response[1]);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("An unrecognised protocol has been received!");
                 }
             }
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     /**
@@ -98,13 +109,14 @@ public class ClientThread extends Thread {
      * @param password
      * @throws IOException
      */
-    public void signUp(String username, String password) throws IOException {
+    private void signUp(String username, String password) throws IOException {
 
         boolean success = server.addUser(username, password);
         if (success) {
 
             output.writeBytes(protocol.createMessage("sign-up", "true", "Congratulations! You have successfully signed up!") + "\n");
         } else {
+
 
             output.writeBytes(protocol.createMessage("sign-up", "false", "Oops! your details are wrong who knows why?") + "\n");
         }
@@ -118,7 +130,7 @@ public class ClientThread extends Thread {
      * @param password
      * @throws IOException
      */
-    public void signIn(String username, String password) throws IOException {
+    private void signIn(String username, String password) throws IOException {
 
         setUsername(username);
 
@@ -139,7 +151,7 @@ public class ClientThread extends Thread {
      * @param offset
      * @throws IOException
      */
-    public void getMessage(int offset) throws IOException {
+    private void getMessage(int offset) throws IOException {
 
         if(offset == -1){
             offset = 0;
@@ -162,22 +174,46 @@ public class ClientThread extends Thread {
 
     }
 
-
     /**
      *
      * @param message
      * @throws IOException
      */
-    public void sendMessage(String message) throws IOException {
+    private void sendMessage(String message) throws IOException {
 
-        output.writeBytes(protocol.createMessage("send-message", "true", "" + server.addMessage(username, message)) + "\n");
+        output.writeBytes(protocol.createMessage("send-message", "true", "" + server.addMessage(this.username, message)) + "\n");
     }
 
-    public void stopThread() throws IOException {
+    /**
+     *
+     * @throws IOException
+     */
+    private void stopThread() {
 
         this.isStopped = true;
-        clientSocket.close();
+        try {
+            clientSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         this.interrupt();
+    }
+
+    /**
+     * Read a line from server and unpack it using SimpleProtocol
+     *
+     * @return
+     */
+    public String[] getResponse() throws IOException {
+
+        String line = input.readLine();
+
+            if (line != null) {
+
+                return protocol.decodeMessage(line);
+            }
+
+        return null;
     }
 
 
