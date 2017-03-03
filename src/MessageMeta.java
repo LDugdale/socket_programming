@@ -6,8 +6,10 @@ public class MessageMeta {
     private String time;
     private String username;
     private String message;
+    private String offset;
 
-    public MessageMeta(String username, String time, String message) {
+    public MessageMeta(String offset, String username, String time, String message) {
+        this.offset = offset;
         this.time = time;
         this.username = username;
         this.message = message;
@@ -41,5 +43,13 @@ public class MessageMeta {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public String getOffset() {
+        return offset;
+    }
+
+    public void setOffset(String offset) {
+        this.offset = offset;
     }
 }

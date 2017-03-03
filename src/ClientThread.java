@@ -1,8 +1,8 @@
+import Protocol.SimpleProtocol;
 import java.io.*;
 import java.net.Socket;
-import java.util.LinkedList;
-import java.util.Queue;
-import java.util.Scanner;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by mnt_x on 28/02/2017.
@@ -15,6 +15,7 @@ public class ClientThread extends Thread {
     private SimpleProtocol protocol;
     private Socket clientSocket;
     private String username;
+    private boolean isStopped;
 
 
     /**
@@ -31,113 +32,152 @@ public class ClientThread extends Thread {
             input = new BufferedReader( new InputStreamReader( clientSocket.getInputStream()));
             output = new DataOutputStream(clientSocket.getOutputStream());
 
-            output.writeBytes(protocol.createMessage("welcome","welcome", "welcome") + "\n");
+            output.writeBytes(protocol.createMessage("welcome","Welcome to the most amazing chat app in the world!") + "\n");
 
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    /**
+     *
+     * @param username
+     */
     public void setUsername(String username){
 
         this.username = username;
     }
 
-    public synchronized void run(){
+    /**
+     *
+     */
+    public void run(){
 
 
-        while (true) {
-            try {
-                sleep(200);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        while (! isStopped) {
+
+            protocol();
+        }
+
+    }
+
+    /**
+     *
+     */
+    public void protocol() {
+
+        String [] response = null;
+        try {
+
+            response = protocol.decodeMessage(input.readLine());
+            if (response != null) {
+
+                if (response[0].equals("sign-up")) {
+
+                    signUp(response[1], response[2]);
+                } else if (response[0].equals("sign-in")) {
+
+                    signIn(response[1], response[2]);
+                } else if (response[0].equals("get-message")) {
+
+                    getMessage(Integer.parseInt(response[1]));
+                } else if (response[0].equals("send-message")) {
+
+                    sendMessage(response[1]);
+                }
             }
-            protocol(getResponse());
 
-
-        }
-
-    }
-
-    public String[] getResponse(){
-
-        try {
-
-            return protocol.decodeMessage(input.readLine());
-        } catch (IOException e) {
-
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    public void protocol(String [] response) {
-
-        if (response[0].equals("sign-up")) {
-
-            signUp(response[1], response[2]);
-        } else if (response[0].equals("sign-in")) {
-
-            signIn(response[1], response[2]);
-        } else if (response[0].equals("get-message")) {
-
-            getMessage(Integer.parseInt(response[1]));
-        } else if (response[0].equals("send-message")) {
-
-            sendMessage(response[1]);
-        }
-    }
-
-
-
-
-    public void signUp(String username, String password){
-
-        server.addUser(username, password);
-        try {
-
-            output.writeBytes(protocol.createMessage("sign-up", "true", "some messages from server") + "\n");
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
-    public void signIn(String username, String password){
+    /**
+     *
+     * @param username
+     * @param password
+     * @throws IOException
+     */
+    public void signUp(String username, String password) throws IOException {
+
+        boolean success = server.addUser(username, password);
+        if (success) {
+
+            output.writeBytes(protocol.createMessage("sign-up", "true", "Congratulations! You have successfully signed up!") + "\n");
+        } else {
+
+            output.writeBytes(protocol.createMessage("sign-up", "false", "Oops! your details are wrong who knows why?") + "\n");
+        }
+
+        stopThread();
+    }
+
+    /**
+     *
+     * @param username
+     * @param password
+     * @throws IOException
+     */
+    public void signIn(String username, String password) throws IOException {
 
         setUsername(username);
-        int test;
-        try {
-            if (server.detailsCorrect(username, password)) {
-                output.writeBytes(protocol.createMessage("sign-in", "true", "some messages from server") + "\n");
-            } else {
-                output.writeBytes(protocol.createMessage("sign-up", "false", "the reason of the failure") + "\n");
 
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (server.detailsCorrect(username, password)) {
+
+            output.writeBytes(protocol.createMessage("sign-in", "true", "Credentials accepted") + "\n");
+        } else {
+
+            output.writeBytes(protocol.createMessage("sign-in", "false", "Credentials rejected") + "\n");
+            stopThread();
         }
+
 
     }
 
-    public void getMessage(int offset){
+    /**
+     *
+     * @param offset
+     * @throws IOException
+     */
+    public void getMessage(int offset) throws IOException {
 
-        try {
-
-            output.writeBytes(protocol.createMessage("get-message", server.getMessages(offset)) + "\n");
-        } catch (IOException e) {
-            e.printStackTrace();
+        if(offset == -1){
+            offset = 0;
         }
+
+        List<MessageMeta> messages = server.getMessages(offset);
+
+        List<String> messageArray = new ArrayList<>();
+        messageArray.add("get-message");
+
+        for(int i = 0; i < messages.size(); i++){
+
+            messageArray.add(messages.get(i).getOffset());
+            messageArray.add(messages.get(i).getSender());
+            messageArray.add(messages.get(i).getTime());
+            messageArray.add(messages.get(i).getMessage());
+        }
+
+        output.writeBytes(protocol.createMessage(messageArray.toArray(new String [messageArray.size()])) + "\n");
+
     }
 
-    public void sendMessage(String message){
 
-        try {
+    /**
+     *
+     * @param message
+     * @throws IOException
+     */
+    public void sendMessage(String message) throws IOException {
 
-            output.writeBytes(protocol.createMessage("send-message", "true", "" + server.addMessage(username, message)) + "\n");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        output.writeBytes(protocol.createMessage("send-message", "true", "" + server.addMessage(username, message)) + "\n");
+    }
+
+    public void stopThread() throws IOException {
+
+        this.isStopped = true;
+        clientSocket.close();
+        this.interrupt();
     }
 
 
