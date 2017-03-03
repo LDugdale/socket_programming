@@ -1,5 +1,7 @@
 /**
- * Created by laurie on 3/3/17.
+ * This class is for storing the information required for each message.
+ *
+ * @author Laurie Dugdale
  */
 public class MessageMeta {
 
@@ -13,12 +15,6 @@ public class MessageMeta {
         this.time = time;
         this.username = username;
         this.message = message;
-    }
-
-    public MessageMeta(){
-        this.time = null;
-        this.username = null;
-        this.message = null;
     }
 
     public String getTime() {

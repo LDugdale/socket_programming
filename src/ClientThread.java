@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 /**
- * Created by mnt_x on 28/02/2017.
+ * @author Laurie Dugdale
  */
 public class ClientThread extends Thread {
 
@@ -64,8 +64,10 @@ public class ClientThread extends Thread {
         while (! isStopped) {
 
             try {
+
                 protocol();
             } catch (IOException e) {
+
                 e.printStackTrace();
             }
         }
@@ -80,27 +82,32 @@ public class ClientThread extends Thread {
 
         String [] response;
 
-            response = getResponse();
+        response = getResponse();
 
-            if (response != null) {
-                switch (response[0]) {
-                    case "sign-up":
-                        signUp(response[1], response[2]);
-                        break;
-                    case "sign-in":
-                        signIn(response[1], response[2]);
-                        break;
-                    case "get-message":
-                        getMessage(Integer.parseInt(response[1]));
-                        break;
-                    case "send-message":
-                        sendMessage(response[1]);
-                        break;
-                    default:
-                        throw new IllegalArgumentException("An unrecognised protocol has been received!");
-                }
+        if (response != null) {
+
+            switch (response[0]) {
+
+                case "sign-up":
+                    signUp(response[1], response[2]);
+                    break;
+
+                case "sign-in":
+                    signIn(response[1], response[2]);
+                    break;
+
+                case "get-message":
+                    getMessage(Integer.parseInt(response[1]));
+                    break;
+
+                case "send-message":
+                    sendMessage(response[1]);
+                    break;
+
+                default:
+                    throw new IllegalArgumentException("An unrecognised protocol has been received!");
             }
-
+        }
     }
 
     /**
