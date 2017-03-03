@@ -13,7 +13,7 @@ public class Server {
     private ServerSocket serverSocket;
     private boolean isStopped;
     private ExecutorService threadPool;
-    private List<String []> messageList;
+    private List<MessageMeta> messageList;
     private SimpleProtocol protocol = new SimpleProtocol();
 
     public Server(int port){
@@ -74,6 +74,28 @@ public class Server {
             throw new RuntimeException("Cannot open port 8080", e);
         }
     }
+
+    public String getMessages(int offset){
+
+        if (offset == -1){
+            offset = 0;
+        }
+
+        String messageString = "";
+
+        for(int i = offset; i < messageList.size(); i++){
+
+            messageString += i + "," + messageList.get(i).getSender() + "," + messageList.get(i).getTime() + "," + messageList.get(i).getMessage();
+        }
+
+        return messageString;
+    }
+
+    public void addMessage(){
+
+//        this.messageList.add( new MessageMeta( ));
+    }
+
 
 
 

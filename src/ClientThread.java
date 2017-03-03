@@ -67,14 +67,18 @@ public class ClientThread extends Thread {
     }
 
     public void protocol(String [] response) {
-        System.out.println("protocol");
+
         if (response[0].equals("sign-up")) {
+
             signUp();
         } else if (response[0].equals("sign-in")) {
+
             signIn();
         } else if (response[0].equals("get-message")) {
-            getMessage();
+
+            getMessage(Integer.parseInt(response[1]));
         } else if (response[0].equals("send-message")) {
+
             sendMessage();
         }
     }
@@ -85,6 +89,7 @@ public class ClientThread extends Thread {
     public void signUp(){
 
         try {
+
             output.writeBytes(protocol.createMessage("sign-up", "true", "some messages from server") + "\n");
         } catch (IOException e) {
             e.printStackTrace();
@@ -95,6 +100,7 @@ public class ClientThread extends Thread {
     public void signIn(){
 
         try {
+
             output.writeBytes(protocol.createMessage("sign-in", "true", "some messages from server") + "\n");
         } catch (IOException e) {
             e.printStackTrace();
@@ -102,10 +108,11 @@ public class ClientThread extends Thread {
 
     }
 
-    public void getMessage(){
+    public void getMessage(int offset){
 
         try {
-            output.writeBytes(protocol.createMessage("sign-in", "true", "some messages from server") + "\n");
+
+            output.writeBytes(protocol.createMessage("get-message", server.getMessages(offset)) + "\n");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -114,7 +121,8 @@ public class ClientThread extends Thread {
     public void sendMessage(){
 
         try {
-            output.writeBytes(protocol.createMessage("sign-in", "true", "some messages from server") + "\n");
+
+            output.writeBytes(protocol.createMessage("send-message", "true", "some messages from server") + "\n");
         } catch (IOException e) {
             e.printStackTrace();
         }
