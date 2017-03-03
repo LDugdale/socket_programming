@@ -3,6 +3,7 @@ import java.net.Socket;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -14,7 +15,7 @@ public class Server {
     private boolean isStopped;
     private ExecutorService threadPool;
     private List<MessageMeta> messageList;
-    private SimpleProtocol protocol = new SimpleProtocol();
+    private Map<String, UserInfo> userInformation;
 
     public Server(int port){
 
@@ -24,8 +25,6 @@ public class Server {
         this.messageList = new ArrayList<>();
         this.threadPool = Executors.newCachedThreadPool();
     }
-
-
 
     public void start(){
 
@@ -91,19 +90,24 @@ public class Server {
         return messageString;
     }
 
-    public void addMessage(){
+    public void addUser(String username, String password){
 
-//        this.messageList.add( new MessageMeta( ));
+        this.userInformation.put(username, new UserInfo(username, password, new ArrayList<>()));
     }
 
+    public int addMessage(String username, int time, String message){
 
+        this.messageList.add( new MessageMeta(username, time , message));
+        return messageList.size();
+    }
 
+    public boolean detailsCorrect(String username, String password){
+        UserInfo user = userInformation.get(username);
+        if (user.getPassword().equals(password)){
+            return true;
+        }
 
-    public void signIn(){
-//        String true = protocol.createMessage("sign-up", "true", "some messages from server")
-//
-//
-//        String false = protocol.createMessage("sign-up", "false", "the reason of the failure")
+        return false;
     }
 
     public static void main(String[] args) {

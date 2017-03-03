@@ -4,13 +4,19 @@
 public class MessageMeta {
 
     private int time;
-    private String sender;
+    private String username;
     private String message;
 
-    public MessageMeta(int time, String sender, String message) {
+    public MessageMeta(String username, int time, String message) {
         this.time = time;
-        this.sender = sender;
+        this.username = username;
         this.message = message;
+    }
+
+    public MessageMeta(){
+        this.time = 0;
+        this.username = null;
+        this.message = null;
     }
 
     public int getTime() {
@@ -22,11 +28,11 @@ public class MessageMeta {
     }
 
     public String getSender() {
-        return sender;
+        return username;
     }
 
     public void setSender(String sender) {
-        this.sender = sender;
+        this.username = sender;
     }
 
     public String getMessage() {

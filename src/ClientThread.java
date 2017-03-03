@@ -14,6 +14,7 @@ public class ClientThread extends Thread {
     private BufferedReader input;	// input stream from the client
     private SimpleProtocol protocol;
     private Socket clientSocket;
+    private String username;
 
 
     /**
@@ -27,7 +28,6 @@ public class ClientThread extends Thread {
         this.server = server;
         this.clientSocket=clientSocket;
         try {
-//            input = new DataInputStream(clientSocket.getInputStream());
             input = new BufferedReader( new InputStreamReader( clientSocket.getInputStream()));
             output = new DataOutputStream(clientSocket.getOutputStream());
 
@@ -36,6 +36,11 @@ public class ClientThread extends Thread {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void setUsername(String username){
+
+        this.username = username;
     }
 
     public synchronized void run(){
@@ -70,24 +75,25 @@ public class ClientThread extends Thread {
 
         if (response[0].equals("sign-up")) {
 
-            signUp();
+            signUp(response[1], response[2]);
         } else if (response[0].equals("sign-in")) {
 
-            signIn();
+            signIn(response[1], response[2]);
         } else if (response[0].equals("get-message")) {
 
             getMessage(Integer.parseInt(response[1]));
         } else if (response[0].equals("send-message")) {
 
-            sendMessage();
+            sendMessage(response[1]);
         }
     }
 
 
 
 
-    public void signUp(){
+    public void signUp(String username, String password){
 
+        server.addUser(username, password);
         try {
 
             output.writeBytes(protocol.createMessage("sign-up", "true", "some messages from server") + "\n");
@@ -97,11 +103,16 @@ public class ClientThread extends Thread {
 
     }
 
-    public void signIn(){
+    public void signIn(String username, String password){
 
+        setUsername(username);
         try {
+            if (server.detailsCorrect(username, password)) {
+                output.writeBytes(protocol.createMessage("sign-in", "true", "some messages from server") + "\n");
+            } else {
+                output.writeBytes(protocol.createMessage("sign-up", "false", "the reason of the failure") + "\n");
 
-            output.writeBytes(protocol.createMessage("sign-in", "true", "some messages from server") + "\n");
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -118,11 +129,11 @@ public class ClientThread extends Thread {
         }
     }
 
-    public void sendMessage(){
+    public void sendMessage(String message){
 
         try {
 
-            output.writeBytes(protocol.createMessage("send-message", "true", "some messages from server") + "\n");
+            output.writeBytes(protocol.createMessage("send-message", "true", "" + server.addMessage(username, time, message)) + "\n");
         } catch (IOException e) {
             e.printStackTrace();
         }
