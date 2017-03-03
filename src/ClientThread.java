@@ -106,6 +106,7 @@ public class ClientThread extends Thread {
     public void signIn(String username, String password){
 
         setUsername(username);
+        int test;
         try {
             if (server.detailsCorrect(username, password)) {
                 output.writeBytes(protocol.createMessage("sign-in", "true", "some messages from server") + "\n");
