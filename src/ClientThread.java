@@ -21,7 +21,7 @@ public class ClientThread extends Thread {
     /**
      * Constructor setup input output stream and assign socket to field variable.
      *
-     * @param clientSocket
+     * @param clientSocket the client socket
      * @param server an instance of the server is passed in to pass messages between the data structures.
      */
     public ClientThread(Server server, Socket clientSocket) {
@@ -46,8 +46,9 @@ public class ClientThread extends Thread {
     }
 
     /**
+     * Setter for the set username variable
      *
-     * @param username
+     * @param username Represents the username of the client the thread is talking too.
      */
     private void setUsername(String username){
 
@@ -55,32 +56,35 @@ public class ClientThread extends Thread {
     }
 
     /**
-     *
+     * The main run method for the ClientThread checks for initial sign in and sign up messages and then enters loop
+     * to continuously check for get-message and send-message messages.
      */
     public void run(){
 
-        while (! isStopped) {
+        try {
 
-            try {
+            // respond to initial sign-in and sign-up messages
+            initialProtocol();
 
-                protocol();
-            } catch (IOException e) {
+            // loop while isStopped boolean is false
+            while (! isStopped) {
 
-                e.printStackTrace();
+                // respond to get-message and send-message while looping
+                loopProtocol();
             }
-        }
 
-        stopThread();
+        } catch (IOException e) {
+
+            e.printStackTrace();
+        }
     }
 
     /**
-     *
+     * Parses the first messages sent from client
      */
-    private void protocol() throws IOException {
+    private void initialProtocol() throws IOException {
 
-        String [] response;
-
-        response = getResponse();
+        String [] response = getMessage();
 
         if (response != null) {
 
@@ -93,6 +97,23 @@ public class ClientThread extends Thread {
                 case "sign-in":
                     signIn(response[1], response[2]);
                     break;
+
+                default:
+                    throw new IllegalArgumentException("An unrecognised protocol has been received!");
+            }
+        }
+    }
+
+    /**
+     * Parses all messages sent after the user is signed in
+     */
+    private void loopProtocol() throws IOException {
+
+        String [] response = getMessage();
+
+        if (response != null) {
+
+            switch (response[0]) {
 
                 case "get-message":
                     getMessage(Integer.parseInt(response[1]));
@@ -109,10 +130,11 @@ public class ClientThread extends Thread {
     }
 
     /**
+     * Handles sign up requests
      *
-     * @param username
-     * @param password
-     * @throws IOException
+     * @param username Represents a users username to be added.
+     * @param password Represents a users password to be added.
+     * @throws IOException Passing IOException to be handled in one place in the run method
      */
     private void signUp(String username, String password) throws IOException {
 
@@ -130,10 +152,11 @@ public class ClientThread extends Thread {
     }
 
     /**
+     * Handles sign in requests
      *
-     * @param username
-     * @param password
-     * @throws IOException
+     * @param username Represents a users username to be checked and signed in to the server.
+     * @param password Represents a users password to be checked and signed in to the server.
+     * @throws IOException Passing IOException to be handled in one place in the run method
      */
     private void signIn(String username, String password) throws IOException {
 
@@ -147,14 +170,14 @@ public class ClientThread extends Thread {
             output.writeBytes(protocol.createMessage("sign-in", "false", "Credentials rejected") + "\n");
             stopThread();
         }
-
-
     }
 
     /**
+     * Handles a get message requests. Adds all the messages specfied by the offset to an array and sends them to the client
+     * using the createMessage method.
      *
-     * @param offset
-     * @throws IOException
+     * @param offset Defines which messages to be returned from the messageList
+     * @throws IOException Passing IOException to be handled in one place in the run method
      */
     private void getMessage(int offset) throws IOException {
 
@@ -163,35 +186,46 @@ public class ClientThread extends Thread {
         }
 
         List<MessageMeta> messages = server.getMessages(offset);
-
         List<String> messageArray = new ArrayList<>();
         messageArray.add("get-message");
 
-        for(int i = 0; i < messages.size(); i++){
+        // loop through the messages and add all the elements of the MessageMeta object to the messageArray in the correct order
+        for (MessageMeta m : messages) {
 
-            messageArray.add(messages.get(i).getOffset());
-            messageArray.add(messages.get(i).getSender());
-            messageArray.add(messages.get(i).getTime());
-            messageArray.add(messages.get(i).getMessage());
+            messageArray.add(m.getOffset());
+            messageArray.add(m.getSender());
+            messageArray.add(m.getTime());
+            messageArray.add(m.getMessage());
         }
 
+        // convert the message array to a string and send to the client
         output.writeBytes(protocol.createMessage(messageArray.toArray(new String [messageArray.size()])) + "\n");
 
     }
 
     /**
+     * Send message sends the message offset to the client if message cannot be added to list reason for failure is
+     * sent instead.
      *
-     * @param message
-     * @throws IOException
+     * @param message The message that has been sent that needs to be stored
+     * @throws IOException Passing IOException to be handled in one place in the run method
      */
     private void sendMessage(String message) throws IOException {
 
-        output.writeBytes(protocol.createMessage("send-message", "true", "" + server.addMessage(this.username, message)) + "\n");
+        int offset = server.addMessage(this.username, message);
+
+        if(offset == -666) {
+
+            output.writeBytes(protocol.createMessage("send-message", "false", "message could not be added") + "\n");
+        } else {
+
+            output.writeBytes(protocol.createMessage("send-message", "true", "" + offset) + "\n");
+        }
     }
 
     /**
+     * Responsible to bringing the thread cleanly to a stop.
      *
-     * @throws IOException
      */
     private void stopThread() {
 
@@ -205,11 +239,12 @@ public class ClientThread extends Thread {
     }
 
     /**
-     * Read a line from server and unpack it using SimpleProtocol
+     * Read a line from the client and unpack it using SimpleProtocol
      *
-     * @return
+     * @return Returns a String array containing the message from the client.
+     * @throws IOException Passing IOException to be handled in one place in the run method
      */
-    public String[] getResponse() throws IOException {
+    public String[] getMessage() throws IOException {
 
         String line = input.readLine();
 
