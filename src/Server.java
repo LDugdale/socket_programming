@@ -36,10 +36,18 @@ public class Server {
         userInformation = new HashMap<>();
     }
 
+    /**
+     * Setter for the host field variable
+     * @param host the host to be used for the server
+     */
     public void setHost(String host){
         this.host = host;
     }
 
+    /**
+     * Setter for the host field variable
+     * @param port  the port to be used for the server
+     */
     public void setPort(int port){
         this.port = port;
     }
