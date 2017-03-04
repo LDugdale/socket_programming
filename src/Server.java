@@ -1,8 +1,12 @@
+import ChatClient.ChatClientApp;
+
+import java.awt.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -12,6 +16,7 @@ import java.util.concurrent.Executors;
 public class Server {
 
     private int port; // Represents the port to be used
+    private String host; // Represents the host
     private ServerSocket serverSocket; // The server socket
     private ExecutorService threadPool; // The thread pool
     private List<MessageMeta> messageList; // The message List
@@ -20,15 +25,23 @@ public class Server {
     /**
      * Server constructor
      *
-     * @param port The port to be opened
      */
-    public Server(int port){
+    public Server(){
 
-        this.port = port;
+        this.port = 0;
+        this.host = "";
         this.serverSocket = null;
         this.messageList = new ArrayList<>();
         this.threadPool = Executors.newCachedThreadPool();
         userInformation = new HashMap<>();
+    }
+
+    public void setHost(String host){
+        this.host = host;
+    }
+
+    public void setPort(int port){
+        this.port = port;
     }
 
     /**
@@ -162,8 +175,17 @@ public class Server {
      */
     public static void main(String[] args) {
 
-        Server server = new Server(8081);
-
-        server.start();
+        EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                try {
+                    Server server = new Server();
+                    server.setHost(args[0]);
+                    server.setPort(Integer.parseInt(args[1]));
+                    server.start();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 }
